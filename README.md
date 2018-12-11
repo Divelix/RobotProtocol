@@ -1,0 +1,1 @@
+Manager and data transfer protocol on C++.
