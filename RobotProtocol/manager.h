@@ -1,13 +1,4 @@
 // Manager that transfer messages with UDP
-/*
-Manager(ip, port)
--Открыть сервер
--Создать пустой Map
-
-routing()
--Если адреса получателя нет в Map - отправить обратно в Компонент-отправитель
--Логировать заголовок сообщения
-*/
 #pragma once
 #include "message.h"
 #include "exchange.h"
@@ -62,10 +53,25 @@ public:
 		return size;
 	}
 };
+/*
+Manager(ip, port)
+-Открыть сервер
+-Создать пустой Map
 
+routing()
+-Если адреса получателя нет в Map - отправить обратно в Компонент-отправитель
+-Логировать заголовок сообщения
+*/
 class Manager {
+private:
+	CUdpServer server;
+	CMapAddress map;
 public:
-	Manager(int ip, int port) {
+	Manager(const char* ip, int port) {
+		server.open(ip, port);
+	}
+
+	void routing() {
 
 	}
 };

@@ -40,7 +40,10 @@ public:
 		std::cout << "Closed socket" << std::endl;
 		return 0;
 	}
+};
 
+class CUdpClient : public CUdp {
+public:
 	int send(CMessage* message, void* address = nullptr, int size = 0) override {
 		sendto(srSocket, message->msg, message->msgSize, NULL, (sockaddr*)&serverAddr, sizeof(serverAddr));
 		return 0;
@@ -68,10 +71,6 @@ public:
 		}
 		return messages;
 	}
-};
-
-class CUdpClient : public CUdp {
-
 };
 
 class CUdpServer : public CUdp {

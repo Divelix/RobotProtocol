@@ -199,7 +199,7 @@ public:
 	}
 
 	~CMessage() {
-		std::cout << "Message destructor happend" << std::endl;
+		//std::cout << "Message destructor happend" << std::endl;
 	}
 
 	bool marshal() {
