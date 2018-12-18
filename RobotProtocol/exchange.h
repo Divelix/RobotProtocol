@@ -1,3 +1,4 @@
+// Transfer protocol (UDP)
 #pragma once
 #include "message.h"
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
@@ -9,7 +10,7 @@ class ACExchangeInterface {
 	virtual int open(const char adr[], int port) = 0;
 	virtual int close() = 0;
 	virtual int send(CMessage* msg, void* address = nullptr, int size = 0) = 0;
-	virtual CMessage* recieve() = 0;
+	virtual std::vector<CMessage> recieve() = 0;
 };
 
 class CUdp : ACExchangeInterface {
@@ -19,9 +20,6 @@ public:
 	sockaddr_in serverAddr; // адрес сервера
 	const int buffSize = 1024; // размер буфера
 	char recvbuf[1024]; // буфер приема
-
-	void setRecieveTimeout(int timeout) { setsockopt(srSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)); }
-	void setSendTimeout(int timeout) { setsockopt(srSocket, SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeout, sizeof(timeout)); }
 
 	int open(const char adr[], int port) override {
 		// Initialize Winsock
@@ -48,16 +46,27 @@ public:
 		return 0;
 	}
 
-	CMessage* recieve() override {
-		int err = recvfrom(srSocket, recvbuf, buffSize, NULL, NULL, NULL);
-		if (err > 0) {
-			std::cout << "Buffer recieved" << std::endl;
+	std::vector<CMessage> recieve() override {
+		std::vector<CMessage> messages;
+		u_long ioBuffSize;
+		ioctlsocket(srSocket, FIONREAD, &ioBuffSize);
+		std::cout << "Start recieve\n  bytes in buffer = " << ioBuffSize << std::endl;
+		while (ioBuffSize > 0) {
+			sockaddr_in client;
+			int clientSize = sizeof(client);
+			int err = recvfrom(srSocket, recvbuf, buffSize, NULL, (sockaddr*)&client, &clientSize);
+			if (err > 0) {
+				std::cout << "Data recieved seccessfully" << std::endl;
+			}
+			else {
+				std::cout << "ERROR on recieve(): " << WSAGetLastError() << std::endl;
+			}
+			CMessage rcvMsg(recvbuf, buffSize);
+			messages.push_back(rcvMsg);
+			ioctlsocket(srSocket, FIONREAD, &ioBuffSize);
+			std::cout << " bytes in buffer = " << ioBuffSize << std::endl;
 		}
-		else {
-			std::cout << "ERROR: Buffer not recieved" << std::endl;
-		}
-		CMessage* message = new CMessage(recvbuf, buffSize);
-		return message;
+		return messages;
 	}
 };
 
@@ -86,18 +95,27 @@ public:
 		return 0;
 	}
 
-	CMessage* recieve() override {
-		sockaddr_in client;
-		int clientSize = sizeof(client);
-		int err = recvfrom(srSocket, recvbuf, buffSize, NULL, (sockaddr*)&client, &clientSize);
-		if (err > 0) {
-			clients.push_back(client);
-			std::cout << "Data recieved by server from " << inet_ntoa(client.sin_addr) << " : " << ntohs(client.sin_port) << std::endl;
+	std::vector<CMessage> recieve() override {
+		std::vector<CMessage> messages;
+		u_long ioBuffSize;
+		ioctlsocket(srSocket, FIONREAD, &ioBuffSize);
+		std::cout << "Start recieve\n  bytes in buffer = " << ioBuffSize << std::endl;
+		while (ioBuffSize > 0) {
+			sockaddr_in client;
+			int clientSize = sizeof(client);
+			int err = recvfrom(srSocket, recvbuf, buffSize, NULL, (sockaddr*)&client, &clientSize);
+			if (err > 0) {
+				clients.push_back(client);
+				std::cout << "Data recieved by server from " << inet_ntoa(client.sin_addr) << " : " << ntohs(client.sin_port) << std::endl;
+			}
+			else {
+				std::cout << "ERROR on recieve(): " << WSAGetLastError() << std::endl;
+			}
+			CMessage rcvMsg(recvbuf, buffSize);
+			messages.push_back(rcvMsg);
+			ioctlsocket(srSocket, FIONREAD, &ioBuffSize);
+			std::cout << " bytes in buffer = " << ioBuffSize << std::endl;
 		}
-		else {
-			std::cout << "ERROR on recieve(): " << WSAGetLastError() << std::endl;
-		}
-		CMessage* message = new CMessage(recvbuf, buffSize);
-		return message;
+		return messages;
 	}
 };

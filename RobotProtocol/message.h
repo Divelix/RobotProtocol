@@ -1,5 +1,5 @@
+// Message structure
 #pragma once
-
 //------------------------------ HEADER ----------------------------
 enum EPriority { LOW, MIDDLE, HIGH, CRITICAL };
 enum EConfirm { NOT_CONFIRM_NO, NOT_CONFIRM_YES, CONFIRM_NO, CONFIRM_YES };
@@ -12,7 +12,7 @@ enum ETypeMsg {
 
 	//3) Сервисные сообщения
 	// a) IS_ALIVE (struct {char flag, int code})
-	IS_ALIVE,
+	IS_ALIVE, REGISTRATION,
 
 	//4) TELECONTROL
 	// a) вектор линейной скорости, вектор вращательной скорости

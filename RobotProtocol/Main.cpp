@@ -64,11 +64,8 @@ int main() {
 	STele tele = { 0.1f, 1.5f, 3.3f };
 	CTeleData teleData;
 	teleData.unpack((char*)&tele);
-	teleData.toStringStream(std::cout);
 	CMessage* message = new CMessage(HIGH, CONFIRM_YES, NAVIG_DATA, { 1, 2, 3 }, { 4, 5, 6 }, &teleData);
-	LOG("message addrTo: " << message->addrTo);
 	CMessage* message2 = new CMessage(LOW, CONFIRM_YES, NAVIG_DATA, { 6, 5, 4 }, { 3, 2, 1 }, &teleData);
-	LOG("message2 addrTo: " << message2->addrTo);
 
 	CUdpServer server;
 	CUdpClient client;
@@ -78,18 +75,15 @@ int main() {
 	client2.open("127.0.0.1", 50000);
 	client.send(message);
 	client2.send(message2);
-	std::this_thread::sleep_for(2s);
-	CMessage* msgRcv = server.recieve();
-	CMessage* msgRcv2 = server.recieve();
-	LOG("msgRcv addrTo: " << msgRcv->addrTo);
-	LOG("msgRcv2 addrTo: " << msgRcv2->addrTo);
-	server.send(msgRcv, &server.clients[0], sizeof(sockaddr_in));
-	CMessage* msgRcv3 = client.recieve();
-	LOG("msgRcv3 addrTo: " << msgRcv2->addrTo);
+	std::this_thread::sleep_for(0.5s);
+	std::vector<CMessage> serverRcvMsgs = server.recieve();
+	server.send(message, &server.clients[0], sizeof(sockaddr_in));
+	server.send(message2, &server.clients[0], sizeof(sockaddr_in));
+	std::vector<CMessage> clientRcvMsgs = client.recieve();
 	server.close();
 	client.close();
 	client2.close();
-	delete message, message2, msgRcv, msgRcv2, msgRcv3;
+	delete message, message2;
 	std::cin.get();
 }
 
