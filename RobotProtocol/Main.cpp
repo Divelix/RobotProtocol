@@ -1,9 +1,10 @@
 #include <iostream>
+#define LOG(x) std::cout << x << std::endl
 #include "message.h"
 #include "exchange.h"
-#define LOG(x) std::cout << x << std::endl
+#include "manager.h"
 
-#if TEST_PROTOCOL == 1 // Создание сообщения
+#if TEST_PROTOCOL == 1 // Message test
 int main() {
 	STele tele = { 0.1f, 1.5f, 3.3f };
 	CTeleData teleData;
@@ -33,7 +34,7 @@ int main() {
 	delete message2;
 	std::cin.get();
 }
-#elif TEST_PROTOCOL == 2 // Запаковка/распаковка данных сообщения
+#elif TEST_PROTOCOL == 2 // Pack/unpack data
 int main() {
 	LOG("-------------------DATA---------------------");
 	LOG(sizeof(SNavig));
@@ -76,10 +77,10 @@ int main() {
 	client.send(message);
 	client2.send(message2);
 	std::this_thread::sleep_for(0.5s);
-	std::vector<CMessage> serverRcvMsgs = server.recieve();
+	CMessage* sRcvMsg1 = server.recieve();
+	CMessage* sRcvMsg2 = server.recieve();
 	server.send(message, &server.clients[0], sizeof(sockaddr_in));
-	server.send(message2, &server.clients[0], sizeof(sockaddr_in));
-	std::vector<CMessage> clientRcvMsgs = client.recieve();
+	CMessage* cRcvMsg = client.recieve();
 	server.close();
 	client.close();
 	client2.close();
@@ -87,8 +88,7 @@ int main() {
 	std::cin.get();
 }
 
-#elif TEST_PROTOCOL	== 4 // Manager test
-#include "manager.h"
+#elif TEST_PROTOCOL	== 4 // Map test
 
 int main() {
 	SAddress addr;
@@ -103,6 +103,20 @@ int main() {
 	std::cin.get();
 }
 
+#elif TEST_PROTOCOL	== 5 // Manager test
+
+int main() {
+	STele tele = { 0.1f, 1.5f, 3.3f };
+	CTeleData teleData;
+	teleData.unpack((char*)&tele);
+	teleData.toStringStream(std::cout);
+	CMessage* message = new CMessage(HIGH, CONFIRM_YES, NAVIG_DATA, { 1, 2, 3 }, { 4, 5, 6 }, &teleData);
+
+	CManager manager("127.0.0.1", 50000);
+
+	std::cin.get();
+}
+
 #elif TEST_PROTOCOL	== 100 // Multithreading
 #include <thread>
 
@@ -110,22 +124,22 @@ static bool isFinished = false;
 
 void doLoad() {
 	using namespace std::literals::chrono_literals;
-	std::cout << "Started thread id = " << std::this_thread::get_id() << std::endl;
+	LOG("Started thread id = " << std::this_thread::get_id());
 
 	while (!isFinished) {
-		std::cout << "Loading..." << std::endl;
+		LOG("Loading...");
 		std::this_thread::sleep_for(500ms);
 	}
 }
 
 int main() {
-	std::cout << "Started thread id = " << std::this_thread::get_id() << std::endl;
+	LOG("Started thread id = " << std::this_thread::get_id());
 	std::thread loader(doLoad);
 	std::cin.get();
 	isFinished = true;
 
 	loader.join();
-	std::cout << "Started thread id = " << std::this_thread::get_id() << std::endl;
+	LOG("Started thread id = " << std::this_thread::get_id());
 
 	std::cin.get();
 }
@@ -142,7 +156,7 @@ int main() {
 	auto end = std::chrono::high_resolution_clock::now();
 
 	std::chrono::duration<float> duration = end - start;
-	std::cout << duration.count() << std::endl;
+	LOG(duration.count());
 
 	std::cin.get();
 }
@@ -160,7 +174,7 @@ struct Timer {
 		duration = start - end;
 
 		float ms = duration.count() * 1000.0f;
-		std::cout << "Timer took " << ms << "ms" << std::endl;
+		LOG("Timer took " << ms << "ms");
 	}
 };
 

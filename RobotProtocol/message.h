@@ -30,7 +30,9 @@ enum ETypeMsg {
 };
 
 struct SAddress {
-	unsigned char node, comp, instance;
+	unsigned char node, // менеджер + компоненты
+				  comp, // компонент
+				  instance; // 'элементы внутри компонента (например датчики) (принимаем за ноль)
 
 	bool operator== (const SAddress* another) {
 		const void* thisBuff1 = this;
@@ -199,7 +201,7 @@ public:
 	}
 
 	~CMessage() {
-		//std::cout << "Message destructor happend" << std::endl;
+		//LOG("Message destructor happend");
 	}
 
 	bool marshal() {
