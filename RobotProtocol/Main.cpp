@@ -106,13 +106,15 @@ int main() {
 #elif TEST_PROTOCOL	== 5 // Manager test
 
 int main() {
-	STele tele = { 0.1f, 1.5f, 3.3f };
-	CTeleData teleData;
-	teleData.unpack((char*)&tele);
-	teleData.toStringStream(std::cout);
-	CMessage* message = new CMessage(HIGH, CONFIRM_YES, NAVIG_DATA, { 1, 2, 3 }, { 4, 5, 6 }, &teleData);
+	STarget target = { 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f };
+	CTargetData targetData;
+	targetData.unpack((char*)&target);
+	targetData.toStringStream(std::cout);
+	CMessage* message = new CMessage(HIGH, CONFIRM_YES, TARGET_SET, { 0, 3, 0 }, { 0, 1, 0 }, &targetData);
 
 	CManager manager("127.0.0.1", 50000);
+	CControlComponent controlCmp(&manager);
+	manager.routing();
 
 	std::cin.get();
 }

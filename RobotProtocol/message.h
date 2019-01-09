@@ -11,8 +11,8 @@ enum ETypeMsg {
 	TARGET_QUERY, TARGET_SET,
 
 	//3) Сервисные сообщения
-	// a) IS_ALIVE (struct {char flag, int code})
 	IS_ALIVE, REGISTRATION,
+	START, STOP, PAUSE,
 
 	//4) TELECONTROL
 	// a) вектор линейной скорости, вектор вращательной скорости
@@ -24,15 +24,15 @@ enum ETypeMsg {
 	// c) кривая (сплайн)
 	GEN_DOTS, GEN_BROKEN, GEN_CURVE,
 
-	//6) START, STOP, PAUSE
-	START, STOP, PAUSE
-
 };
 
 struct SAddress {
 	unsigned char node, // менеджер + компоненты
 				  comp, // компонент
 				  instance; // 'элементы внутри компонента (например датчики) (принимаем за ноль)
+	SAddress() {}
+	SAddress(unsigned char node, unsigned char comp, unsigned char instance):
+		node(node), comp(comp), instance(instance) {}
 
 	bool operator== (const SAddress* another) {
 		const void* thisBuff1 = this;
@@ -96,17 +96,17 @@ class CNavigData : public ACBaseType {
 public:
 	SNavig navig;
 
-	int pack(char* buff) {
+	int pack(char* buff) override {
 		int size = sizeof(SNavig);
 		memcpy(buff, &navig, size);
 		return size;
 	}
 
-	void unpack(char* buff) {
+	void unpack(char* buff) override {
 		memcpy(&navig, buff, sizeof(SNavig));
 	}
 
-	void toStringStream(std::ostream& stream) {
+	void toStringStream(std::ostream& stream) override {
 		stream << "NavigData:\n"
 			<< " Position: " << navig.x << ", " << navig.y << ", " << navig.z << ";\n"
 			<< " Orientation: " << navig.roll << ", " << navig.pitch << ", " << navig.yaw << ";\n"
@@ -121,17 +121,17 @@ class CTargetData : public ACBaseType {
 public:
 	STarget target;
 
-	int pack(char* buff) {
+	int pack(char* buff) override {
 		int size = sizeof(STarget);
 		memcpy(buff, &target, size);
 		return size;
 	}
 
-	void unpack(char* buff) {
+	void unpack(char* buff) override {
 		memcpy(&target, buff, sizeof(STarget));
 	}
 
-	void toStringStream(std::ostream& stream) {
+	void toStringStream(std::ostream& stream) override {
 		stream << "NavigData:\n"
 			<< " Position: " << target.x << ", " << target.y << ", " << target.z << ";\n"
 			<< " Orientation: " << target.roll << ", " << target.pitch << ", " << target.yaw << ";\n"
@@ -144,17 +144,17 @@ class CTeleData : public ACBaseType {
 public:
 	STele telemetry;
 
-	int pack(char* buff) {
+	int pack(char* buff) override {
 		int size = sizeof(STele);
 		memcpy(buff, &telemetry, size);
 		return size;
 	}
 
-	void unpack(char* buff) {
+	void unpack(char* buff) override {
 		memcpy(&telemetry, buff, sizeof(STele));
 	}
 
-	void toStringStream(std::ostream& stream) {
+	void toStringStream(std::ostream& stream) override {
 		stream << "TeleData:\n"
 			<< " Velocity: " << telemetry.v1 << ", " << telemetry.v2 << ", " << telemetry.v3 << ";\n";
 	}
@@ -178,7 +178,7 @@ public:
 	// Передача
 	CMessage(EPriority prior, EConfirm conf, ETypeMsg type, SAddress addrF, SAddress addrT, ACBaseType* data = nullptr) :
 		priority(prior), confirm(conf), msgType(type), addrFrom(addrF), addrTo(addrT), msgData(data) {
-		dataSize = msgData->pack(msg + 6);
+		dataSize = msgData != NULL ? msgData->pack(msg + 6) : NULL;
 		msgSize = dataSize + 7;
 		marshal();
 		msg[msgSize - 1] = CRC8(msg, msgSize - 1);

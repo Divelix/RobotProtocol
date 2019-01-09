@@ -7,6 +7,7 @@
 #pragma comment(lib, "wsock32.lib")
 
 class ACExchangeInterface {
+public:
 	virtual int open(const char* adr, int port) = 0;
 	virtual int close() = 0;
 	virtual int send(CMessage* msg, void* address = nullptr, int size = 0) = 0;
@@ -21,7 +22,7 @@ public:
 	const int buffSize = 1024; // размер буфера
 	char recvbuf[1024]; // буфер приема
 
-	int open(const char* adr, int port) override {
+	int open(const char* adr, int port) {
 		// Initialize Winsock
 		WSAStartup(MAKEWORD(2, 2), &wsaData);
 
@@ -50,7 +51,6 @@ public:
 	}
 
 	CMessage* recieve() override {
-		LOG("CLIENT RECIEVE()");
 		u_long ioBuffSize;
 		ioctlsocket(srSocket, FIONREAD, &ioBuffSize);
 		LOG("Bytes in buffer = " << ioBuffSize);
@@ -70,9 +70,8 @@ public:
 class CUdpServer : public CUdp {
 public:
 	sockaddr_in clientAddr;
-	std::vector<sockaddr_in> clients;//-----tmp
 
-	int open(const char* adr, int port) override {
+	int open(const char* adr, int port) override {// override ne override hz
 		CUdp::open(adr, port);
 		int err = bind(srSocket, (sockaddr*)&serverAddr, sizeof(serverAddr));
 		if (err == SOCKET_ERROR) {
@@ -96,7 +95,6 @@ public:
 		if (ioBuffSize <= 0) return NULL;
 		int clientSize = sizeof(clientAddr);
 		int err = recvfrom(srSocket, recvbuf, buffSize, NULL, (sockaddr*)&clientAddr, &clientSize);
-		clients.push_back(clientAddr);//------tmp
 		if (err > 0) {
 			LOG("Data recieved by server from " << inet_ntoa(clientAddr.sin_addr) << " : " << ntohs(clientAddr.sin_port));
 		} else {
