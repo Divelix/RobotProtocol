@@ -79,7 +79,7 @@ int main() {
 	std::this_thread::sleep_for(0.5s);
 	CMessage* sRcvMsg1 = server.recieve();
 	CMessage* sRcvMsg2 = server.recieve();
-	server.send(message, &server.clients[0], sizeof(sockaddr_in));
+	server.send(message, &server.clientAddr, sizeof(sockaddr_in));
 	CMessage* cRcvMsg = client.recieve();
 	server.close();
 	client.close();
@@ -90,17 +90,59 @@ int main() {
 
 #elif TEST_PROTOCOL	== 4 // Map test
 
-int main() {
-	SAddress addr;
-	addr.node = (char)5;
-	addr.comp = (char)4;
-	addr.instance = (char)3;
-	CUdpServer server;
+struct SPair {
+	int* key;
+	int* value;
 
-	CMapAddress map;
-	map.add(&addr, (ACExchangeInterface*)&server);
-	ACExchangeInterface* serverFromMap = map.get(&addr);
-	std::cin.get();
+	~SPair() {
+		delete key;
+		delete value;
+	}
+};
+
+class CMap {
+public:
+	SPair** map;
+	int initSize = 16;
+	int size;
+
+	CMap() : size(0) {
+		map = new SPair*[initSize];
+		memset(map, NULL, sizeof(SPair*) * initSize);
+	}
+	~CMap() {
+		for (int i = 0; i < size; i++) {
+			delete map[i];
+		}
+		memset(map, NULL, sizeof(SPair*) * initSize);
+	}
+
+	void add(int* a, int* b) {
+		SPair* pair = new SPair();
+		pair->key = a;
+		pair->value = b;
+		map[size] = pair;
+		size++;
+	}
+};
+
+int main() {
+	/*CMap* map;
+	for (int i = 0; i < 10; i++)  {
+		map = new CMap();
+		map->add(new int(11), new int(22));
+		map->add(new int(33), new int(44));
+		map->add(new int(55), new int(66));
+		delete map;
+	}*/
+
+	SAddress* addr = new SAddress(1, 2, 3);
+	ACExchangeInterface* server = (ACExchangeInterface*)new CUdpServer();
+
+	CMapAddress* map = new CMapAddress();
+	map->add(addr, server);
+	ACExchangeInterface* serverIntf = map->get(addr);
+	delete map;
 }
 
 #elif TEST_PROTOCOL	== 5 // Manager test
@@ -110,12 +152,15 @@ int main() {
 	CTargetData targetData;
 	targetData.unpack((char*)&target);
 	targetData.toStringStream(std::cout);
-	CMessage* message = new CMessage(HIGH, CONFIRM_YES, TARGET_SET, { 0, 3, 0 }, { 0, 1, 0 }, &targetData);
+	//CMessage* message = new CMessage(HIGH, CONFIRM_YES, TARGET_SET, { 0, 3, 0 }, { 0, 1, 0 }, &targetData);
 
-	CManager manager("127.0.0.1", 50000);
-	CControlComponent controlCmp(&manager);
-	manager.routing();
+	CManager* manager = new CManager("127.0.0.1", 50000);
+	CControlComponent controlCmp(manager);
+	manager->routing();
 
+	controlCmp.die();
+	manager->server.close();
+	//delete manager;
 	std::cin.get();
 }
 

@@ -49,7 +49,7 @@ struct SAddress {
 	}
 };
 
-//вычисление контрольной суммы
+// Check sum evaluation
 unsigned char CRC8(char *pcBlock, unsigned int len) {
 	unsigned char crc = 0xFF;
 	unsigned int i;
@@ -63,7 +63,7 @@ unsigned char CRC8(char *pcBlock, unsigned int len) {
 }
 
 //------------------------------DATA---------------------------------
-// базовый класс для работы с данными в сообщении
+// Base abstract class for message data
 class ACBaseType {
 public:
 	virtual int pack(char* buff) { return 0; }
@@ -74,7 +74,7 @@ public:
 };
 
 #pragma pack(push, 1)
-// Структуры для данных в сообщении
+// Storage for message data
 struct SNavig {
 	float x, y, z, roll, pitch, yaw;
 	float x1, y1, z1, roll1, pitch1, yaw1;
@@ -91,7 +91,6 @@ struct STele {
 };
 #pragma pack(pop)
 
-// Клаcс для работы с данными навигации
 class CNavigData : public ACBaseType {
 public:
 	SNavig navig;
@@ -175,7 +174,7 @@ public:
 	char msg[262];
 	unsigned int msgSize;
 
-	// Передача
+	// Transmit
 	CMessage(EPriority prior, EConfirm conf, ETypeMsg type, SAddress addrF, SAddress addrT, ACBaseType* data = nullptr) :
 		priority(prior), confirm(conf), msgType(type), addrFrom(addrF), addrTo(addrT), msgData(data) {
 		dataSize = msgData != NULL ? msgData->pack(msg + 6) : NULL;
@@ -184,7 +183,7 @@ public:
 		msg[msgSize - 1] = CRC8(msg, msgSize - 1);
 	}
 
-	// Приём
+	// Recieve
 	CMessage(char* buff, int size) {
 		for (int i = 0; i < size; i++) {
 			if (buff[i] == SOH && ((buff[i + 4] & 7) == marker)) {
@@ -201,7 +200,8 @@ public:
 	}
 
 	~CMessage() {
-		//LOG("Message destructor happend");
+		if (msgData != NULL) delete msgData;
+		LOG("Message destructor happend");
 	}
 
 	bool marshal() {

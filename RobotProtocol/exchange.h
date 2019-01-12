@@ -22,7 +22,7 @@ public:
 	const int buffSize = 1024; // размер буфера
 	char recvbuf[1024]; // буфер приема
 
-	int open(const char* adr, int port) {
+	int open(const char* adr, int port) override {
 		// Initialize Winsock
 		WSAStartup(MAKEWORD(2, 2), &wsaData);
 
@@ -72,7 +72,16 @@ public:
 	sockaddr_in clientAddr;
 
 	int open(const char* adr, int port) override {// override ne override hz
-		CUdp::open(adr, port);
+		// Initialize Winsock
+		WSAStartup(MAKEWORD(2, 2), &wsaData);
+
+		// Create a SOCKET
+		srSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+		serverAddr.sin_family = AF_INET;
+		serverAddr.sin_addr.s_addr = inet_addr(adr);
+		serverAddr.sin_port = htons(port);
+
 		int err = bind(srSocket, (sockaddr*)&serverAddr, sizeof(serverAddr));
 		if (err == SOCKET_ERROR) {
 			LOG("Server bind ERROR: " << WSAGetLastError());

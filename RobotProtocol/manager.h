@@ -2,29 +2,34 @@
 #pragma once
 #include "message.h"
 #include "exchange.h"
-//#include <windows.h>
 #include <vector>
 #include <chrono>
 
 struct SElementMap {
 	SAddress* key;
 	ACExchangeInterface* value;
+
+	~SElementMap() {
+		delete key;
+		delete value;
+	}
 };
 
 class CMapAddress {
 private:
 	SElementMap** map;
-	int size;
+	int capacity = 16; // max number of elements in map
+	int size; // current number of elements in map
 public:
-	CMapAddress() :
-		size(0) {
-		map = new SElementMap*[16];
-		memset(map, NULL, sizeof(SElementMap) * 16);
+	CMapAddress() :	size(0) {
+		map = new SElementMap*[capacity];
+		memset(map, NULL, sizeof(SElementMap*) * capacity);
 	}
 	~CMapAddress() {
-		for (int i = 0; i < 16; i++) {
+		for (int i = 0; i < size; i++) {
 			delete map[i];
 		}
+		delete map;
 	}
 
 	void add(SAddress* addr, ACExchangeInterface* intf) {
@@ -64,9 +69,6 @@ Manager(ip, port)
 routing()
 -Если адреса получателя нет в Map - отправить обратно в Компонент-отправитель
 -Логировать заголовок сообщения
-
-Вопросы:
-1)
 */
 class CManager {
 public:
@@ -81,21 +83,29 @@ public:
 
 	void routing() {
 		CMessage* msg = server.recieve();
+		if (msg == NULL) return;
 		ETypeMsg type = msg->msgType; // почекать разные сервисные сообщения
 		SAddress addrFrom = msg->addrFrom;
 		SAddress addrTo = msg->addrTo;
+
+		// component registration
 		if (type == REGISTRATION && map.get(&addrFrom) == NULL) {
 			CUdpServerIdle* serverIdle = new CUdpServerIdle(&server);
 			map.add(&addrFrom, (ACExchangeInterface*)&serverIdle);
-			LOG("Component (SAddress.comp: " << addrFrom.comp << ") has just been registered");
+			LOG("REGISTRATION IS DONE");
+			delete msg;
 		}
+
+		// If reciver component is absent
 		if (map.get(&addrTo) == NULL && addrTo.comp != 0) {
 			LOG("ERROR: reciever component is not registered in manager");
 			//CMessage* ERROR_MESSAGE; // make error message
 			//server.send(ERROR_MESSAGE, (void*)&(server.clientAddr), sizeof(sockaddr_in));
 		}
-		if (addrTo.comp != 0) { // if its message for manager (system message)
-			CUdpServerIdle* componentInterface = (CUdpServerIdle*)map.get(&addrTo);
+
+		// if the message is not for manager (system message)
+		if (addrTo.comp != 0) {
+			CUdpServer* componentInterface = (CUdpServer*)map.get(&addrTo);
 			sockaddr_in componentAddr = componentInterface->clientAddr;
 			server.send(msg, (void*)&componentAddr, sizeof(sockaddr_in));
 		}
@@ -139,6 +149,12 @@ public:
 		//auto end = std::chrono::steady_clock::now();
 		//double elapsedTimeMillis = double(std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
 	}
+
+	void die() {
+		selfClient->close();
+		delete selfClient;
+		LOG("Component is dead now");
+	}
 };
 
 /*
@@ -166,7 +182,7 @@ public:
 		partners.push_back(SAddress(0, 3, 0));
 		sockaddr_in serverAddr = manager->server.serverAddr;
 		managerAddr = manager->selfAddr;
-		selfClient = (ACExchangeInterface*)new CUdpClient();
+		selfClient = (ACExchangeInterface*) new CUdpClient();
 		selfClient->open(inet_ntoa(serverAddr.sin_addr), ntohs(serverAddr.sin_port));
 		// Registration message to manager
 		selfClient->send(new CMessage(HIGH, CONFIRM_NO, REGISTRATION, selfAddr, managerAddr, NULL));
