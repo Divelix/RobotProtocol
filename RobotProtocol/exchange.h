@@ -113,11 +113,12 @@ public:
 	}
 };
 
+// Trick to save generality of a protocol
 class CUdpServerIdle : public CUdpServer {
 public:
-	CUdpServerIdle(CUdpServer* baseServer) {
-		wsaData = baseServer->wsaData;
-		srSocket = baseServer->srSocket;
-		clientAddr = baseServer->clientAddr;
+	CUdpServerIdle(const CUdpServer& baseServer) {
+		wsaData = baseServer.wsaData;
+		srSocket = baseServer.srSocket;
+		clientAddr = baseServer.clientAddr;
 	}
 };

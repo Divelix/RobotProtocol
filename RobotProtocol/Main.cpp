@@ -3,6 +3,7 @@
 #include "message.h"
 #include "exchange.h"
 #include "manager.h"
+#include "components.h"
 
 #if TEST_PROTOCOL == 1 // Message test
 int main() {
@@ -160,7 +161,7 @@ int main() {
 
 	controlCmp.die();
 	manager->server.close();
-	//delete manager;
+	delete manager;
 	std::cin.get();
 }
 

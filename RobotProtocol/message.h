@@ -27,12 +27,15 @@ enum ETypeMsg {
 };
 
 struct SAddress {
-	unsigned char node, // менеджер + компоненты
-				  comp, // компонент
-				  instance; // 'элементы внутри компонента (например датчики) (принимаем за ноль)
+	unsigned char node, // manager + components
+				  comp, // component
+				  instance; // parts of component (i.e. sensors)
 	SAddress() {}
 	SAddress(unsigned char node, unsigned char comp, unsigned char instance):
 		node(node), comp(comp), instance(instance) {}
+	SAddress(const SAddress& other) {
+		memcpy(this, &other, sizeof(SAddress));
+	}
 
 	bool operator== (const SAddress* another) {
 		const void* thisBuff1 = this;
