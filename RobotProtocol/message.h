@@ -235,16 +235,16 @@ public:
 			switch (msgType) {
 			case NAVIG_DATA:
 			{
-				CNavigData navigData;
-				navigData.unpack(msg + 6);
-				msgData = (ACBaseType*)&navigData;
+				CNavigData* navigData = new CNavigData();
+				navigData->unpack(msg + 6);
+				msgData = (ACBaseType*)navigData;
 			}
 			break;
 			case TARGET_SET:
 			{
-				CTargetData targetData;
-				targetData.unpack(msg + 6);
-				msgData = (ACBaseType*)&targetData;
+				CTargetData* targetData = new CTargetData();
+				targetData->unpack(msg + 6);
+				msgData = (ACBaseType*)targetData;
 			}
 			break;
 			}

@@ -24,7 +24,6 @@ public:
 		memset(map, NULL, sizeof(SElementMap*) * capacity);
 	}
 	~CMapAddress() {
-		LOG("MAP DESTRUCTOR JUST HAPPEND");
 		for (int i = 0; i < size; i++) {
 			delete map[i];
 		}
@@ -86,32 +85,34 @@ public:
 	}
 
 	void routing() {
-		CMessage* msg = server.recieve();
-		if (msg == NULL) return;
-		ETypeMsg type = msg->msgType; // почекать разные сервисные сообщения
-		SAddress addrFrom = msg->addrFrom;
-		SAddress* addrTo = new SAddress(msg->addrTo);
+		for (int i = 0; i < 5; i++)	{
+			CMessage* msg = server.recieve();
+			if (msg == NULL) return;
+			ETypeMsg type = msg->msgType; // почекать разные сервисные сообщения
+			SAddress addrFrom = msg->addrFrom;
+			SAddress* addrTo = new SAddress(msg->addrTo);
 
-		// component registration
-		if (type == REGISTRATION && map->get(&addrFrom) == NULL) {
-			map->add(new SAddress(addrFrom), (ACExchangeInterface*)new CUdpServerIdle(server));
-			LOG("REGISTRATION IS DONE");
-			delete msg;
-		}
-
-		// if the message is not for manager (system message)
-		if (addrTo->comp != 0) {
-			if (map->get(addrTo) == NULL) {
-				LOG("ERROR: wrong address or reciever component is not registered in manager");
-				//CMessage* ERROR_MESSAGE; // make error message
-				//server.send(ERROR_MESSAGE, (void*)&(server.clientAddr), sizeof(sockaddr_in));
+			// component registration
+			if (type == REGISTRATION && map->get(&addrFrom) == NULL) {
+				map->add(new SAddress(addrFrom), (ACExchangeInterface*)new CUdpServerIdle(server));
+				LOG("REGISTRATION IS DONE");
+				delete msg;
 			}
-			CUdpServer* componentInterface = (CUdpServer*)map->get(addrTo);
-			sockaddr_in componentAddr = componentInterface->clientAddr;
-			server.send(msg, (void*)&componentAddr, sizeof(sockaddr_in));
+
+			// if the message is not for manager (system message)
+			if (addrTo->comp != 0) {
+				if (map->get(addrTo) == NULL) {
+					LOG("ERROR: wrong address or reciever component is not registered in manager");
+					//CMessage* ERROR_MESSAGE; // make error message
+					//server.send(ERROR_MESSAGE, (void*)&(server.clientAddr), sizeof(sockaddr_in));
+				}
+				CUdpServer* componentInterface = (CUdpServer*)map->get(addrTo);
+				sockaddr_in componentAddr = componentInterface->clientAddr;
+				server.send(msg, (void*)&componentAddr, sizeof(sockaddr_in));
+			}
+			return;
+			// Sleep(100); // Millis?
+			// TODO check if 100 microsec passed
 		}
-		return;
-		// Sleep(100); // Millis?
-		// TODO check if 100 microsec passed
 	}
 };

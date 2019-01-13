@@ -71,9 +71,9 @@ public:
 
 	void messageProcessing(CMessage* msg) override {
 		if (msg->addrFrom.comp == 2) {
-			//LOG("Data from TrajectoryComponent recieved");
+			LOG("Data from TrajectoryComponent recieved");
 			if (msg->msgType == TARGET_SET) {
-				//LOG("New target");
+				LOG("New target");
 				targetData = (CTargetData*)msg->msgData;
 			}
 		} else if (msg->addrFrom.comp == 3) {
@@ -123,4 +123,32 @@ public:
 	}
 };
 
-class CNavigComponent : ACBaseComponent {};
+class CNavigComponent : ACBaseComponent {
+public:
+	CTargetData* targetData;
+
+	CNavigComponent(CManager* manager) {
+		selfAddr = { 0, 2, 0 };
+		partners.push_back(SAddress(0, 1, 0)); // !!! check on stack deletion
+		partners.push_back(SAddress(0, 2, 0));
+		sockaddr_in serverAddr = manager->server.serverAddr;
+		managerAddr = manager->selfAddr;
+		selfClient = (ACExchangeInterface*) new CUdpClient();
+		selfClient->open(inet_ntoa(serverAddr.sin_addr), ntohs(serverAddr.sin_port));
+		// Ask the manager to register this component
+		selfClient->send(new CMessage(HIGH, CONFIRM_NO, REGISTRATION, selfAddr, managerAddr, NULL));
+	}
+
+	void messageProcessing(CMessage* msg) override {
+		return;
+	}
+
+	void work() override {
+		LOG("work() of trajectoryCmp");
+		STarget target = { 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f };
+		CTargetData* targetData = new CTargetData();
+		targetData->unpack((char*)&target);
+		CMessage* msg = new CMessage(HIGH, CONFIRM_NO, TARGET_SET, selfAddr, partners[0], (ACBaseType*)targetData);
+		selfClient->send(msg);
+	}
+};
