@@ -41,7 +41,7 @@ public:
 
 	ACExchangeInterface* get(SAddress* key) {
 		for (int i = 0; i < size; i++) {
-			if (map[i]->key == key) {
+			if (*(map[i]->key) == *key) {
 				return map[i]->value;
 			}
 		}
@@ -76,7 +76,7 @@ public:
 	CMapAddress* map;
 
 	CManager(const char* ip, int port) {
-		selfAddr = SAddress(0, 0, 0);
+		selfAddr = { 0, 0, 0 };
 		map = new CMapAddress();
 		server.open(ip, port);
 	}
@@ -90,7 +90,7 @@ public:
 		if (msg == NULL) return;
 		ETypeMsg type = msg->msgType; // почекать разные сервисные сообщения
 		SAddress addrFrom = msg->addrFrom;
-		SAddress addrTo = msg->addrTo;
+		SAddress* addrTo = new SAddress(msg->addrTo);
 
 		// component registration
 		if (type == REGISTRATION && map->get(&addrFrom) == NULL) {
@@ -99,19 +99,18 @@ public:
 			delete msg;
 		}
 
-		// If reciver component is absent
-		if (map->get(&addrTo) == NULL && addrTo.comp != 0) {
-			LOG("ERROR: reciever component is not registered in manager");
-			//CMessage* ERROR_MESSAGE; // make error message
-			//server.send(ERROR_MESSAGE, (void*)&(server.clientAddr), sizeof(sockaddr_in));
-		}
-
 		// if the message is not for manager (system message)
-		if (addrTo.comp != 0) {
-			CUdpServer* componentInterface = (CUdpServer*)map->get(&addrTo);
+		if (addrTo->comp != 0) {
+			if (map->get(addrTo) == NULL) {
+				LOG("ERROR: wrong address or reciever component is not registered in manager");
+				//CMessage* ERROR_MESSAGE; // make error message
+				//server.send(ERROR_MESSAGE, (void*)&(server.clientAddr), sizeof(sockaddr_in));
+			}
+			CUdpServer* componentInterface = (CUdpServer*)map->get(addrTo);
 			sockaddr_in componentAddr = componentInterface->clientAddr;
 			server.send(msg, (void*)&componentAddr, sizeof(sockaddr_in));
 		}
+		return;
 		// Sleep(100); // Millis?
 		// TODO check if 100 microsec passed
 	}

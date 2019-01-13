@@ -37,9 +37,9 @@ struct SAddress {
 		memcpy(this, &other, sizeof(SAddress));
 	}
 
-	bool operator== (const SAddress* another) {
+	bool operator== (const SAddress& another) {
 		const void* thisBuff1 = this;
-		const void* anotherBuff2 = another;
+		const void* anotherBuff2 = &another;
 		int compare = memcmp(thisBuff1, anotherBuff2, sizeof(thisBuff1));
 		if (compare == 0) {
 			return true;
@@ -202,8 +202,12 @@ public:
 		}
 	}
 
+	CMessage(const CMessage& other) {
+		memcpy(this, &other, sizeof(CMessage));
+	}
+
 	~CMessage() {
-		if (msgData != NULL) delete msgData;
+		//if (msgData != NULL) delete msgData;
 		LOG("Message destructor happend");
 	}
 
@@ -228,7 +232,22 @@ public:
 			priority = (EPriority)((msg[3] >> 2) & 3);
 			confirm = (EConfirm)(msg[3] & 3);
 			msgType = (ETypeMsg)(msg[4] >> 3);
-			dataSize = msg[5];
+			switch (msgType) {
+			case NAVIG_DATA:
+			{
+				CNavigData navigData;
+				navigData.unpack(msg + 6);
+				msgData = (ACBaseType*)&navigData;
+			}
+			break;
+			case TARGET_SET:
+			{
+				CTargetData targetData;
+				targetData.unpack(msg + 6);
+				msgData = (ACBaseType*)&targetData;
+			}
+			break;
+			}
 			return true;
 		}
 		return false;

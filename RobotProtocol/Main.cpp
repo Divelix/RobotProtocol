@@ -63,11 +63,11 @@ int main() {
 using namespace std::literals::chrono_literals;
 
 int main() {
-	STele tele = { 0.1f, 1.5f, 3.3f };
-	CTeleData teleData;
-	teleData.unpack((char*)&tele);
-	CMessage* message = new CMessage(HIGH, CONFIRM_YES, NAVIG_DATA, { 1, 2, 3 }, { 4, 5, 6 }, &teleData);
-	CMessage* message2 = new CMessage(LOW, CONFIRM_YES, NAVIG_DATA, { 6, 5, 4 }, { 3, 2, 1 }, &teleData);
+	STarget target = { 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f };
+	CTargetData targetData;
+	targetData.unpack((char*)&target);
+	CMessage* message = new CMessage(HIGH, CONFIRM_NO, TARGET_SET, { 1, 2, 3 }, { 4, 5, 6 }, &targetData);
+	CMessage* message2 = new CMessage(LOW, CONFIRM_NO, TARGET_SET, { 6, 5, 4 }, { 3, 2, 1 }, &targetData);
 
 	CUdpServer server;
 	CUdpClient client;
@@ -137,12 +137,20 @@ int main() {
 		delete map;
 	}*/
 
-	SAddress* addr = new SAddress(1, 2, 3);
-	ACExchangeInterface* server = (ACExchangeInterface*)new CUdpServer();
+	SAddress* addr1 = new SAddress(1, 2, 3);
+	SAddress* addr2 = new SAddress(4, 5, 6);
+	SAddress* addr3 = new SAddress(7, 8, 9);
+	ACExchangeInterface* server1 = (ACExchangeInterface*)new CUdpServer();
+	ACExchangeInterface* server2 = (ACExchangeInterface*)new CUdpServer();
+	ACExchangeInterface* server3 = (ACExchangeInterface*)new CUdpServer();
 
 	CMapAddress* map = new CMapAddress();
-	map->add(addr, server);
-	ACExchangeInterface* serverIntf = map->get(addr);
+	map->add(addr1, server1);
+	map->add(addr2, server2);
+	map->add(addr3, server3);
+	ACExchangeInterface* serverIntf1 = map->get(addr1);
+	ACExchangeInterface* serverIntf2 = map->get(addr2);
+	ACExchangeInterface* serverIntf3 = map->get(addr3);
 	delete map;
 }
 
@@ -158,6 +166,12 @@ int main() {
 	CManager* manager = new CManager("127.0.0.1", 50000);
 	CControlComponent controlCmp(manager);
 	manager->routing();
+	CTrajectoryComponent trajectoryCmp(manager);
+	manager->routing();
+
+	trajectoryCmp.baseAlgorithm();
+	manager->routing();
+	controlCmp.baseAlgorithm();
 
 	controlCmp.die();
 	manager->server.close();
